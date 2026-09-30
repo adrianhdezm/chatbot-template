@@ -1,4 +1,4 @@
-import type { Browser, Page } from "playwright"
+import { chromium, type Browser, type Page } from "playwright"
 import {
   afterAll,
   afterEach,
@@ -6,31 +6,49 @@ import {
   beforeEach,
   describe,
   expect,
+  inject,
   it,
 } from "vitest"
 
-import {
-  assistantMessages,
-  launchBrowser,
-  lastAssistantMessage,
-  openChat,
-  send,
-  sendButton,
-  stopButton,
-  waitForReply,
-} from "./helpers"
+async function openChat(page: Page) {
+  await page.goto(inject("baseUrl"))
+  await page.getByText("What can I help with?").waitFor()
+}
+
+async function send(page: Page, text: string) {
+  await page.getByPlaceholder("Send a message…").fill(text)
+  await page.keyboard.press("Enter")
+}
+
+const sendButton = (page: Page) =>
+  page.getByRole("button", { name: "Send message" })
+
+const stopButton = (page: Page) =>
+  page.getByRole("button", { name: "Stop generating" })
+
+// Wait for a request to start (stop button or thinking indicator) and then
+// for the response to finish (send button back).
+async function waitForReply(page: Page) {
+  await stopButton(page).or(page.getByText("Thinking…")).first().waitFor()
+  await sendButton(page).waitFor()
+}
+
+const assistantMessages = (page: Page) =>
+  page.locator('[data-slot="message"][data-align="start"]')
+
+const lastAssistantMessage = (page: Page) => assistantMessages(page).last()
 
 describe("chat page", () => {
   let browser: Browser
-  let page: Page
 
   beforeAll(async () => {
-    browser = await launchBrowser()
+    browser = await chromium.launch({ headless: inject("headless") })
   })
 
   afterAll(async () => {
     await browser.close()
   })
+  let page: Page
 
   beforeEach(async () => {
     page = await browser.newPage()

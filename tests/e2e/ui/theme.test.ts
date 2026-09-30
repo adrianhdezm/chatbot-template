@@ -1,20 +1,23 @@
-import type { Browser } from "playwright"
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { chromium, type Browser, type Page } from "playwright"
+import { afterAll, beforeAll, describe, expect, inject, it } from "vitest"
 
-import { baseUrl, launchBrowser, openChat } from "./helpers"
+async function openChat(page: Page) {
+  await page.goto(inject("baseUrl"))
+  await page.getByText("What can I help with?").waitFor()
+}
 
 describe("theme", () => {
   let browser: Browser
 
   beforeAll(async () => {
-    browser = await launchBrowser()
+    browser = await chromium.launch({ headless: inject("headless") })
   })
 
   afterAll(async () => {
     await browser.close()
   })
 
-  const isDark = (page: import("playwright").Page) =>
+  const isDark = (page: Page) =>
     page.evaluate(() => ({
       dark: document.documentElement.classList.contains("dark"),
       colorScheme: document.documentElement.style.colorScheme,
@@ -73,7 +76,7 @@ describe("theme", () => {
         ? route.abort()
         : route.continue()
     )
-    await page.goto(baseUrl(), { waitUntil: "domcontentloaded" })
+    await page.goto(inject("baseUrl"), { waitUntil: "domcontentloaded" })
     expect((await isDark(page)).dark).toBe(true)
     await context.close()
   })

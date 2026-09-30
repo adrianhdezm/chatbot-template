@@ -113,9 +113,11 @@ pnpm exec playwright install chromium   # once
 pnpm test:e2e
 ```
 
-- `api.test.ts` checks the `/api/chat` stream against the AI SDK UI message protocol: text deltas, the two-step tool call, the client-side `ask_user` stop and resume, source citations, errors and request validation.
-- `chat.test.ts` drives the page in a browser: markdown rendering, tool parts, the questionnaire round trip, the sources drawer, stop, error display and New Chat.
-- `theme.test.ts` covers the OS preference, the `d` hotkey, persistence and the pre-hydration theme script.
+- `api/chat.test.ts` checks the `/api/chat` stream against the AI SDK UI message protocol: text deltas, the two-step tool call, the client-side `ask_user` stop and resume, source citations, errors and request validation.
+- `ui/chat.test.ts` drives the page in a browser: markdown rendering, tool parts, the questionnaire round trip, the sources drawer, stop, error display and New Chat.
+- `ui/theme.test.ts` covers the OS preference, the `d` hotkey, persistence and the pre-hydration theme script.
+
+Each test file is self-contained: it launches its own browser and keeps its own page actions and request helpers. The build-and-serve step is in `e2e-setup.ts`, which provides `baseUrl` to the tests (read with `inject("baseUrl")`).
 
 Set `E2E_SKIP_BUILD=1` to reuse an existing `build/` and `E2E_SERVER_LOGS=1` to see the server output.
 

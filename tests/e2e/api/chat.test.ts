@@ -1,8 +1,30 @@
-import { describe, expect, it } from "vitest"
-
-import { baseUrl, postChat, userMessage } from "./helpers"
+import { describe, expect, it, inject } from "vitest"
 
 const MODEL = "mock/assistant"
+
+// Collect the UI message stream events of a POST to /api/chat.
+async function postChat(body: unknown) {
+  const response = await fetch(`${inject("baseUrl")}/api/chat`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const text = await response.text()
+  const events = text
+    .split("\n")
+    .filter((line) => line.startsWith("data: ") && !line.includes("[DONE]"))
+    .map(
+      (line) =>
+        JSON.parse(line.slice(6)) as { type: string } & Record<string, unknown>
+    )
+  return { response, text, events }
+}
+
+const userMessage = (text: string) => ({
+  id: "user-1",
+  role: "user",
+  parts: [{ type: "text", text }],
+})
 
 describe("POST /api/chat (UI message stream protocol)", () => {
   it("streams a text reply as server-sent events", async () => {
@@ -140,7 +162,7 @@ describe("POST /api/chat (UI message stream protocol)", () => {
   })
 
   it("rejects malformed bodies and non-POST requests", async () => {
-    const badJson = await fetch(`${baseUrl()}/api/chat`, {
+    const badJson = await fetch(`${inject("baseUrl")}/api/chat`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: "not json",
@@ -150,7 +172,7 @@ describe("POST /api/chat (UI message stream protocol)", () => {
     const badMessages = await postChat({ model: MODEL, messages: "nope" })
     expect(badMessages.response.status).toBe(400)
 
-    const get = await fetch(`${baseUrl()}/api/chat`)
+    const get = await fetch(`${inject("baseUrl")}/api/chat`)
     expect(get.status).toBe(405)
   })
 })
