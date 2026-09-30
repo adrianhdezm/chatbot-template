@@ -1,17 +1,12 @@
-import {
-  isRouteErrorResponse,
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-} from "react-router"
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse } from 'react-router';
 
-import type { Route } from "./+types/root"
-import "./app.css"
-import { SiteHeader } from "~/components/site-header"
-import { ThemeProvider } from "~/components/theme-provider"
-import { appContext } from "~/context"
+import { SiteHeader } from '~/components/site-header';
+import { ThemeProvider } from '~/components/theme-provider';
+
+import { appContext } from '~/context';
+
+import type { Route } from './+types/root';
+import './app.css';
 
 // Server-only: expose the environment to every loader and action through the
 // request context. Swap this for a custom server (Hono, Cloudflare) later
@@ -19,25 +14,25 @@ import { appContext } from "~/context"
 export const middleware: Route.MiddlewareFunction[] = [
   ({ context }, next) => {
     context.set(appContext, {
-      env: { OPENAI_API_KEY: process.env.OPENAI_API_KEY },
-    })
-    return next()
-  },
-]
+      env: { OPENAI_API_KEY: process.env.OPENAI_API_KEY }
+    });
+    return next();
+  }
+];
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico" },
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  { rel: 'icon', href: '/favicon.ico' },
+  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous'
   },
   {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap",
-  },
-]
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap'
+  }
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -59,27 +54,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }
 
 export default function App() {
-  return <Outlet />
+  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!"
-  let details = "An unexpected error occurred."
-  let stack: string | undefined
+  let message = 'Oops!';
+  let details = 'An unexpected error occurred.';
+  let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error"
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details
+    message = error.status === 404 ? '404' : 'Error';
+    details = error.status === 404 ? 'The requested page could not be found.' : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message
-    stack = error.stack
+    details = error.message;
+    stack = error.stack;
   }
 
   return (
@@ -92,5 +84,5 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </pre>
       )}
     </main>
-  )
+  );
 }

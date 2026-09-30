@@ -1,14 +1,10 @@
-import * as React from "react"
-import { ArrowUpIcon, SquareIcon } from "lucide-react"
+import { ArrowUpIcon, SquareIcon } from 'lucide-react';
+import * as React from 'react';
 
-import type { ChatModel } from "~/lib/models"
-import { ModelSelect } from "~/components/model-select"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "~/components/ui/input-group"
+import { ModelSelect } from '~/components/model-select';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '~/components/ui/input-group';
+
+import type { ChatModel } from '~/lib/models';
 
 export function PromptForm({
   models,
@@ -16,25 +12,25 @@ export function PromptForm({
   onModelChange,
   isBusy,
   onSubmit,
-  onStop,
+  onStop
 }: {
-  models: ChatModel[]
-  model: string
-  onModelChange: (model: string) => void
-  isBusy: boolean
-  onSubmit: (text: string) => void
-  onStop: () => void
+  models: ChatModel[];
+  model: string;
+  onModelChange: (model: string) => void;
+  isBusy: boolean;
+  onSubmit: (text: string) => void;
+  onStop: () => void;
 }) {
-  const [input, setInput] = React.useState("")
+  const [input, setInput] = React.useState('');
 
   function handleSubmit(event?: React.FormEvent) {
-    event?.preventDefault()
-    const text = input.trim()
+    event?.preventDefault();
+    const text = input.trim();
     if (!text || isBusy) {
-      return
+      return;
     }
-    onSubmit(text)
-    setInput("")
+    onSubmit(text);
+    setInput('');
   }
 
   return (
@@ -46,22 +42,14 @@ export function PromptForm({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
-            if (
-              event.key === "Enter" &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing
-            ) {
-              event.preventDefault()
-              handleSubmit()
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              handleSubmit();
             }
           }}
         />
         <InputGroupAddon align="block-end">
-          <ModelSelect
-            models={models}
-            value={model}
-            onValueChange={onModelChange}
-          />
+          <ModelSelect models={models} value={model} onValueChange={onModelChange} />
           {isBusy ? (
             <InputGroupButton
               type="button"
@@ -88,5 +76,5 @@ export function PromptForm({
         </InputGroupAddon>
       </InputGroup>
     </form>
-  )
+  );
 }

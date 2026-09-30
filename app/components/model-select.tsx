@@ -1,36 +1,27 @@
-import * as React from "react"
+import * as React from 'react';
 
-import type { ChatModel } from "~/lib/models"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+
+import type { ChatModel } from '~/lib/models';
 
 export function ModelSelect({
   models,
   value,
-  onValueChange,
+  onValueChange
 }: {
-  models: ChatModel[]
-  value: string
-  onValueChange: (value: string) => void
+  models: ChatModel[];
+  value: string;
+  onValueChange: (value: string) => void;
 }) {
-  const items = React.useMemo(
-    () => models.map((model) => ({ label: model.name, value: model.id })),
-    [models]
-  )
+  const items = React.useMemo(() => models.map((model) => ({ label: model.name, value: model.id })), [models]);
 
   return (
     <Select
       items={items}
       value={value}
       onValueChange={(next) => {
-        if (typeof next === "string") {
-          onValueChange(next)
+        if (typeof next === 'string') {
+          onValueChange(next);
         }
       }}
     >
@@ -47,5 +38,5 @@ export function ModelSelect({
         </SelectGroup>
       </SelectContent>
     </Select>
-  )
+  );
 }

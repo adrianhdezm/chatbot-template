@@ -1,6 +1,6 @@
-import { Link } from "react-router"
+import { Link } from 'react-router';
 
-import { NewChatButton } from "~/components/new-chat-button"
+import { NewChatButton } from '~/components/new-chat-button';
 
 export function SiteHeader() {
   return (
@@ -10,5 +10,5 @@ export function SiteHeader() {
       </Link>
       <NewChatButton />
     </header>
-  )
+  );
 }

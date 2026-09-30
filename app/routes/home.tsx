@@ -1,83 +1,73 @@
-import * as React from "react"
-import { useChat } from "@ai-sdk/react"
-import { lastAssistantMessageIsCompleteWithToolCalls } from "ai"
+import { useChat } from '@ai-sdk/react';
+import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
+import * as React from 'react';
 
-import type { Route } from "./+types/home"
-import { appContext } from "~/context"
-import { getAvailableModels } from "~/lib/models.server"
-import type { ChatUIMessage } from "~/tools"
-import { ChatMessage } from "~/components/chat-message"
-import { PromptForm } from "~/components/prompt-form"
-import { QuestionCard } from "~/components/question-card"
-import { Suggestions } from "~/components/suggestions"
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "~/components/ui/empty"
+import { ChatMessage } from '~/components/chat-message';
+import { PromptForm } from '~/components/prompt-form';
+import { QuestionCard } from '~/components/question-card';
+import { Suggestions } from '~/components/suggestions';
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '~/components/ui/empty';
 import {
   MessageScroller,
   MessageScrollerButton,
   MessageScrollerContent,
   MessageScrollerItem,
   MessageScrollerProvider,
-  MessageScrollerViewport,
-} from "~/components/ui/message-scroller"
+  MessageScrollerViewport
+} from '~/components/ui/message-scroller';
+
+import { appContext } from '~/context';
+import { getAvailableModels } from '~/lib/models.server';
+import type { ChatUIMessage } from '~/tools';
+
+import type { Route } from './+types/home';
 
 export function meta(): Route.MetaDescriptors {
   return [
-    { title: "Chat" },
+    { title: 'Chat' },
     {
-      name: "description",
-      content:
-        "A chatbot template built using React Router, shadcn/ui, shadcn/react and shadcn/typeset, powered by the AI SDK and OpenAI.",
-    },
-  ]
+      name: 'description',
+      content: 'A chatbot template built using React Router, shadcn/ui, shadcn/react and shadcn/typeset, powered by the AI SDK and OpenAI.'
+    }
+  ];
 }
 
 // Models are decided on the server: real OpenAI models when an API key is
 // configured, otherwise the built-in mock model.
 export function loader({ context }: Route.LoaderArgs) {
-  const { env } = context.get(appContext)
-  return { models: getAvailableModels(env) }
+  const { env } = context.get(appContext);
+  return { models: getAvailableModels(env) };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { models } = loaderData
+  const { models } = loaderData;
 
   // --- Page state -----------------------------------------------------------
 
-  const [model, setModel] = React.useState(models[0]?.id ?? "")
+  const [model, setModel] = React.useState(models[0]?.id ?? '');
 
-  const { messages, sendMessage, status, stop, error, addToolOutput } =
-    useChat<ChatUIMessage>({
-      // Resume the conversation automatically once the user has answered the
-      // ask_user questionnaire.
-      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    })
+  const { messages, sendMessage, status, stop, error, addToolOutput } = useChat<ChatUIMessage>({
+    // Resume the conversation automatically once the user has answered the
+    // ask_user questionnaire.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls
+  });
 
-  const resolvedModel = models.some((m) => m.id === model)
-    ? model
-    : (models[0]?.id ?? "")
+  const resolvedModel = models.some((m) => m.id === model) ? model : (models[0]?.id ?? '');
 
-  const isBusy = status === "submitted" || status === "streaming"
+  const isBusy = status === 'submitted' || status === 'streaming';
 
-  const lastMessage = messages.at(-1)
+  const lastMessage = messages.at(-1);
   const pendingQuestion =
-    lastMessage?.role === "assistant"
+    lastMessage?.role === 'assistant'
       ? lastMessage.parts.find(
-          (part): part is Extract<typeof part, { type: "tool-ask_user" }> =>
-            part.type === "tool-ask_user" &&
-            (part.state === "input-streaming" ||
-              part.state === "input-available")
+          (part): part is Extract<typeof part, { type: 'tool-ask_user' }> =>
+            part.type === 'tool-ask_user' && (part.state === 'input-streaming' || part.state === 'input-available')
         )
-      : undefined
+      : undefined;
 
   function send(text: string) {
-    void sendMessage({ text }, { body: { model: resolvedModel } })
+    void sendMessage({ text }, { body: { model: resolvedModel } });
   }
 
   // --- Page ---------------------------------------------------------------
@@ -89,10 +79,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <Empty>
             <EmptyHeader>
               <EmptyTitle>What can I help with?</EmptyTitle>
-              <EmptyDescription>
-                Pick a model and start chatting. Responses stream in as the
-                model generates them.
-              </EmptyDescription>
+              <EmptyDescription>Pick a model and start chatting. Responses stream in as the model generates them.</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
               <Suggestions onSelect={send} />
@@ -105,22 +92,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <MessageScrollerViewport>
               <MessageScrollerContent className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-6">
                 {messages.map((message) => (
-                  <MessageScrollerItem
-                    key={message.id}
-                    messageId={message.id}
-                    scrollAnchor={message.role === "user"}
-                  >
-                    <ChatMessage
-                      message={message}
-                      isStreaming={isBusy && message.id === lastMessage?.id}
-                    />
+                  <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === 'user'}>
+                    <ChatMessage message={message} isStreaming={isBusy && message.id === lastMessage?.id} />
                   </MessageScrollerItem>
                 ))}
-                {status === "submitted" && (
+                {status === 'submitted' && (
                   <MessageScrollerItem messageId="thinking">
-                    <div className="flex shimmer items-center gap-2 px-3 text-sm text-muted-foreground">
-                      Thinking…
-                    </div>
+                    <div className="flex shimmer items-center gap-2 px-3 text-sm text-muted-foreground">Thinking…</div>
                   </MessageScrollerItem>
                 )}
               </MessageScrollerContent>
@@ -129,11 +107,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   part={pendingQuestion}
                   onAnswer={(toolCallId, answer) => {
                     void addToolOutput({
-                      tool: "ask_user",
+                      tool: 'ask_user',
                       toolCallId,
                       output: answer,
-                      options: { body: { model: resolvedModel } },
-                    })
+                      options: { body: { model: resolvedModel } }
+                    });
                   }}
                 />
               )}
@@ -160,5 +138,5 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         />
       </div>
     </div>
-  )
+  );
 }

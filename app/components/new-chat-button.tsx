@@ -1,6 +1,6 @@
-import { PlusIcon } from "lucide-react"
+import { PlusIcon } from 'lucide-react';
 
-import { Button } from "~/components/ui/button"
+import { Button } from '~/components/ui/button';
 
 export function NewChatButton() {
   return (
@@ -17,5 +17,5 @@ export function NewChatButton() {
       <PlusIcon data-icon="inline-start" />
       New Chat
     </Button>
-  )
+  );
 }

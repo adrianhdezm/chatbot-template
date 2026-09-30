@@ -21,13 +21,13 @@ pnpm dev
 
 That's it. With no credentials configured the model picker offers **Mock assistant**. Try the suggestion chips on the empty screen, or:
 
-| Say…                                        | To see…                                                      |
-| ------------------------------------------- | ------------------------------------------------------------ |
-| "Tell me a story"                           | Rich markdown streaming (headings, table, code block)        |
-| "GitHub stats for vercel/next.js"           | A server-executed tool call and the follow-up answer         |
-| "Search the web for React Router news"      | A search tool with a "Searched N websites" sources drawer    |
-| "Ask me a few clarifying questions"         | The human-in-the-loop questionnaire and the resumed reply    |
-| "error"                                     | How a stream error is surfaced in the UI                     |
+| Say…                                   | To see…                                                   |
+| -------------------------------------- | --------------------------------------------------------- |
+| "Tell me a story"                      | Rich markdown streaming (headings, table, code block)     |
+| "GitHub stats for vercel/next.js"      | A server-executed tool call and the follow-up answer      |
+| "Search the web for React Router news" | A search tool with a "Searched N websites" sources drawer |
+| "Ask me a few clarifying questions"    | The human-in-the-loop questionnaire and the resumed reply |
+| "error"                                | How a stream error is surfaced in the UI                  |
 
 To talk to real models, create an API key in the [OpenAI dashboard](https://platform.openai.com/api-keys) and add it to `.env.local`:
 
@@ -49,9 +49,9 @@ pnpm start
 
 ## Configuration
 
-| Env var              | Required | Description                                                                                        |
-| -------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `OPENAI_API_KEY`     | No       | OpenAI API key. When unset the mock model is used.                                                 |
+| Env var          | Required | Description                                        |
+| ---------------- | -------- | -------------------------------------------------- |
+| `OPENAI_API_KEY` | No       | OpenAI API key. When unset the mock model is used. |
 
 The model list lives in [app/lib/models.ts](app/lib/models.ts) — the first entry is the default model. [app/lib/models.server.ts](app/lib/models.server.ts) decides which models are offered and resolves the mock model. Everything mock-related lives in [app/mock/](app/mock).
 
@@ -81,13 +81,13 @@ Modules ending in `.server.ts` never reach the client bundle.
 
 Assistant messages are a list of typed parts. [app/components/chat-message.tsx](app/components/chat-message.tsx) switches on `part.type` and delegates each one to a component in [app/components/parts/](app/components/parts):
 
-| Part type          | Component                                                    | Renders                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text`             | [text-part.tsx](app/components/parts/text-part.tsx)             | Markdown via react-markdown and shadcn/typeset.                                                                                             |
-| `tool-github_repo` | [github-repo-part.tsx](app/components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                          |
-| `tool-web_search`  | [web-search-part.tsx](app/components/parts/web-search-part.tsx) | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                  |
-| `tool-ask_user`    | [ask-user-part.tsx](app/components/parts/ask-user-part.tsx)     | The answered questions inline. Pending questions render in [question-card.tsx](app/components/question-card.tsx), pinned to the scroller bottom. |
-| `source-url`       | [sources-part.tsx](app/components/parts/sources-part.tsx)       | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                      |
+| Part type          | Component                                                         | Renders                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `text`             | [text-part.tsx](app/components/parts/text-part.tsx)               | Markdown via react-markdown and shadcn/typeset.                                                                                                  |
+| `tool-github_repo` | [github-repo-part.tsx](app/components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                               |
+| `tool-web_search`  | [web-search-part.tsx](app/components/parts/web-search-part.tsx)   | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                       |
+| `tool-ask_user`    | [ask-user-part.tsx](app/components/parts/ask-user-part.tsx)       | The answered questions inline. Pending questions render in [question-card.tsx](app/components/question-card.tsx), pinned to the scroller bottom. |
+| `source-url`       | [sources-part.tsx](app/components/parts/sources-part.tsx)         | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                           |
 
 Tool parts move through states as the stream progresses — `input-streaming` → `input-available` → `output-available` (or `output-error`) — and each component switches on `part.state` to show progress, results, and failures.
 
@@ -124,14 +124,14 @@ The browser runs headless by default. Set `E2E_HEADED=1` to watch it, `E2E_SKIP_
 
 ## Scripts
 
-| Script           | What it does                                         |
-| ---------------- | ---------------------------------------------------- |
-| `pnpm dev`       | Start the dev server with HMR                        |
-| `pnpm build`     | Build client and server bundles into `build/`        |
-| `pnpm start`     | Serve the production build                           |
-| `pnpm typecheck` | Generate route types and run `tsc`                   |
-| `pnpm lint`      | ESLint (type-aware, with jsx-a11y and Prettier)      |
-| `pnpm format`    | Prettier (with the Tailwind class sorter)            |
+| Script           | What it does                                           |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm dev`       | Start the dev server with HMR                          |
+| `pnpm build`     | Build client and server bundles into `build/`          |
+| `pnpm start`     | Serve the production build                             |
+| `pnpm typecheck` | Generate route types and run `tsc`                     |
+| `pnpm lint`      | ESLint (type-aware, with jsx-a11y and Prettier)        |
+| `pnpm format`    | Prettier (with the Tailwind class sorter)              |
 | `pnpm test:e2e`  | Build, serve in mock mode and run the Playwright tests |
 
 ## License

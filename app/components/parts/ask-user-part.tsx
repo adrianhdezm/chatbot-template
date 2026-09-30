@@ -1,8 +1,8 @@
-import type { AskUserToolPart } from "~/tools"
+import type { AskUserToolPart } from '~/tools';
 
 export function AskUserPart({ part }: { part: AskUserToolPart }) {
-  if (part.state !== "output-available") {
-    return null
+  if (part.state !== 'output-available') {
+    return null;
   }
 
   return (
@@ -10,11 +10,11 @@ export function AskUserPart({ part }: { part: AskUserToolPart }) {
       <ol>
         {part.output.map((entry) => (
           <li key={entry.question}>
-            <span className="text-muted-foreground">{entry.question}</span>{" "}
+            <span className="text-muted-foreground">{entry.question}</span>{' '}
             <span className="font-medium text-foreground">{entry.answer}</span>
           </li>
         ))}
       </ol>
     </div>
-  )
+  );
 }

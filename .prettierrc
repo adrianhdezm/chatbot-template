@@ -1,11 +1,11 @@
 {
-  "endOfLine": "lf",
-  "semi": false,
-  "singleQuote": false,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "printWidth": 80,
-  "plugins": ["prettier-plugin-tailwindcss"],
+  "singleQuote": true,
+  "printWidth": 140,
+  "trailingComma": "none",
+  "importOrder": ["^~/routes/(.*)$", "^~/components/(.*)$", "^~/(.*)$", "^@/(.*)$", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
   "tailwindStylesheet": "app/app.css",
   "tailwindFunctions": ["cn", "cva"]
 }
