@@ -43,7 +43,7 @@ cp .env.example .env.local
 # then set AI_GATEWAY_API_KEY=...
 ```
 
-The React Router dev server loads `.env` files into `process.env`. When a credential is present the real models from [lib/models.ts](lib/models.ts) replace the mock in the picker.
+The React Router dev server loads `.env` files into `process.env`. When a credential is present the real models from [app/lib/models.ts](app/lib/models.ts) replace the mock in the picker.
 
 ## Production
 
@@ -60,7 +60,7 @@ pnpm start
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------- |
 | `AI_GATEWAY_API_KEY` | No       | AI Gateway API key. When unset (and no `VERCEL_OIDC_TOKEN` is present) the mock model is used.     |
 
-The model list lives in [lib/models.ts](lib/models.ts) — the first entry is the default model. [lib/models.server.ts](lib/models.server.ts) decides which models are offered and resolves the mock model.
+The model list lives in [app/lib/models.ts](app/lib/models.ts) — the first entry is the default model. [app/lib/models.server.ts](app/lib/models.server.ts) decides which models are offered and resolves the mock model.
 
 ## Security
 
@@ -70,7 +70,7 @@ The `/api/chat` route is **public and unauthenticated** — every request spends
 - **Cap spend.** Set an [AI Gateway spend limit](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets) as a backstop.
 - **Add auth** if the chatbot isn't meant to be public. React Router [middleware](https://reactrouter.com/how-to/middleware) is a good place for it.
 
-The route already validates the request body, restricts models to the ones offered in [lib/models.server.ts](lib/models.server.ts), caps output tokens and step count, and aborts generation on client disconnect — but those bound a single request, not overall volume.
+The route already validates the request body, restricts models to the ones offered in [app/lib/models.server.ts](app/lib/models.server.ts), caps output tokens and step count, and aborts generation on client disconnect — but those bound a single request, not overall volume.
 
 ## How it works
 
@@ -78,31 +78,31 @@ The route already validates the request body, restricts models to the ones offer
 - [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
 - [app/routes/home.tsx](app/routes/home.tsx) loads the available models on the server and renders the chat.
 - [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
-- [components/chat.tsx](components/chat.tsx) renders the conversation with `useChat` and shadcn chat primitives.
-- [lib/mock-model.server.ts](lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no gateway credential is configured.
-- [tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [tools/index.ts](tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and provider-native web search (with a canned stand-in for the mock model in [tools/mock_web_search.ts](tools/mock_web_search.ts)).
+- [app/components/chat.tsx](app/components/chat.tsx) renders the conversation with `useChat` and shadcn chat primitives.
+- [app/lib/mock-model.server.ts](app/lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no gateway credential is configured.
+- [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and provider-native web search (with a canned stand-in for the mock model in [app/tools/mock_web_search.ts](app/tools/mock_web_search.ts)).
 
 Modules ending in `.server.ts` never reach the client bundle.
 
 ## Tool parts
 
-Assistant messages are a list of typed parts. [components/chat-message.tsx](components/chat-message.tsx) switches on `part.type` and delegates each one to a component in [components/parts/](components/parts):
+Assistant messages are a list of typed parts. [app/components/chat-message.tsx](app/components/chat-message.tsx) switches on `part.type` and delegates each one to a component in [app/components/parts/](app/components/parts):
 
 | Part type          | Component                                                    | Renders                                                                                                                                     |
 | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text`             | [text-part.tsx](components/parts/text-part.tsx)             | Markdown via react-markdown and shadcn/typeset.                                                                                             |
-| `tool-github_repo` | [github-repo-part.tsx](components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                          |
-| `tool-web_search`  | [web-search-part.tsx](components/parts/web-search-part.tsx) | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                  |
-| `tool-ask_user`    | [ask-user-part.tsx](components/parts/ask-user-part.tsx)     | The answered questions inline. Pending questions render in [question-card.tsx](components/question-card.tsx), pinned to the scroller bottom. |
-| `source-url`       | [sources-part.tsx](components/parts/sources-part.tsx)       | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                      |
+| `text`             | [text-part.tsx](app/components/parts/text-part.tsx)             | Markdown via react-markdown and shadcn/typeset.                                                                                             |
+| `tool-github_repo` | [github-repo-part.tsx](app/components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                          |
+| `tool-web_search`  | [web-search-part.tsx](app/components/parts/web-search-part.tsx) | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                  |
+| `tool-ask_user`    | [ask-user-part.tsx](app/components/parts/ask-user-part.tsx)     | The answered questions inline. Pending questions render in [question-card.tsx](app/components/question-card.tsx), pinned to the scroller bottom. |
+| `source-url`       | [sources-part.tsx](app/components/parts/sources-part.tsx)       | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                      |
 
 Tool parts move through states as the stream progresses — `input-streaming` → `input-available` → `output-available` (or `output-error`) — and each component switches on `part.state` to show progress, results, and failures.
 
 ### Adding your own tool
 
-1. Create `tools/<name>.ts` (the filename is the model-facing tool name) exporting a `tool()` with a `description`, an `inputSchema`, and an `execute` function (omit `execute` for tools the user answers in the UI, like `ask_user`), then register it in [tools/index.ts](tools/index.ts).
-2. Add a part component in [components/parts/](components/parts) and a `case "tool-<name>"` in [chat-message.tsx](components/chat-message.tsx).
-3. Optionally teach the mock model about it in [lib/mock-model.server.ts](lib/mock-model.server.ts) so it can be exercised offline.
+1. Create `app/tools/<name>.ts` (the filename is the model-facing tool name) exporting a `tool()` with a `description`, an `inputSchema`, and an `execute` function (omit `execute` for tools the user answers in the UI, like `ask_user`), then register it in [app/tools/index.ts](app/tools/index.ts).
+2. Add a part component in [app/components/parts/](app/components/parts) and a `case "tool-<name>"` in [chat-message.tsx](app/components/chat-message.tsx).
+3. Optionally teach the mock model about it in [app/lib/mock-model.server.ts](app/lib/mock-model.server.ts) so it can be exercised offline.
 
 Message types are inferred from the tool definitions via `InferUITools`, so `part.input` and `part.output` are fully typed in your part component — renaming a tool field is a build error, not a silent `undefined`.
 

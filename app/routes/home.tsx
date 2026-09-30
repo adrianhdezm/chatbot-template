@@ -1,6 +1,6 @@
 import type { Route } from "./+types/home"
-import { getAvailableModels } from "@/lib/models.server"
-import { Chat } from "@/components/chat"
+import { getAvailableModels } from "~/lib/models.server"
+import { Chat } from "~/components/chat"
 
 export function meta(): Route.MetaDescriptors {
   return [

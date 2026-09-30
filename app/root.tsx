@@ -8,9 +8,9 @@ import {
 } from "react-router"
 
 import type { Route } from "./+types/root"
-import "./globals.css"
-import { SiteHeader } from "@/components/site-header"
-import { ThemeProvider } from "@/components/theme-provider"
+import "./app.css"
+import { SiteHeader } from "~/components/site-header"
+import { ThemeProvider } from "~/components/theme-provider"
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico" },

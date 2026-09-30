@@ -8,9 +8,9 @@ import {
 } from "ai"
 
 import type { Route } from "./+types/api.chat"
-import { DEFAULT_MODEL } from "@/lib/models"
-import { resolveModel } from "@/lib/models.server"
-import { getTools, type ChatUIMessage } from "@/tools"
+import { DEFAULT_MODEL } from "~/lib/models"
+import { resolveModel } from "~/lib/models.server"
+import { getTools, type ChatUIMessage } from "~/tools"
 
 const MAX_OUTPUT_TOKENS = 8192
 
