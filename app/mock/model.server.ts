@@ -1,7 +1,7 @@
 import { simulateReadableStream, type LanguageModel } from "ai"
 
-import { MOCK_MODEL } from "~/lib/models"
-import type { MockWebSearchOutput } from "~/tools/mock_web_search"
+import { MOCK_MODEL } from "~/mock"
+import type { MockWebSearchOutput } from "~/mock/web-search"
 
 // A LanguageModelV4 implementation that never calls a provider. It scripts a
 // handful of scenarios so every part of the UI message stream protocol can be

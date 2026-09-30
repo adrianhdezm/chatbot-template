@@ -1,14 +1,9 @@
 import { openai } from "@ai-sdk/openai"
 import type { LanguageModel } from "ai"
 
-import { createMockModel } from "~/lib/mock-model.server"
-import {
-  isMockModel,
-  isModelAllowed,
-  MOCK_MODEL,
-  MODELS,
-  type ChatModel,
-} from "~/lib/models"
+import { isModelAllowed, MODELS, type ChatModel } from "~/lib/models"
+import { isMockModel, MOCK_MODEL } from "~/mock"
+import { createMockModel } from "~/mock/model.server"
 
 // The OpenAI provider reads OPENAI_API_KEY from the environment.
 export function isOpenAIConfigured() {
