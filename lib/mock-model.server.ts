@@ -1,12 +1,4 @@
-import type {
-  LanguageModelV4,
-  LanguageModelV4CallOptions,
-  LanguageModelV4FinishReason,
-  LanguageModelV4Prompt,
-  LanguageModelV4StreamPart,
-  LanguageModelV4ToolResultPart,
-} from "@ai-sdk/provider"
-import { simulateReadableStream } from "ai"
+import { simulateReadableStream, type LanguageModel } from "ai"
 
 import { MOCK_MODEL } from "@/lib/models"
 import type { MockWebSearchOutput } from "@/tools/mock_web_search"
@@ -17,9 +9,22 @@ import type { MockWebSearchOutput } from "@/tools/mock_web_search"
 // a client-answered tool (ask_user), a search tool with source citations, and
 // a stream error.
 
-type StreamPart = LanguageModelV4StreamPart
-type FinishReason = LanguageModelV4FinishReason
-type ToolResultPart = LanguageModelV4ToolResultPart
+// `ai` does not re-export the provider spec types, so derive them from the
+// `LanguageModel` union instead of depending on @ai-sdk/provider directly.
+type LanguageModelV4 = Extract<LanguageModel, { specificationVersion: "v4" }>
+type LanguageModelV4CallOptions = Parameters<LanguageModelV4["doStream"]>[0]
+type LanguageModelV4Prompt = LanguageModelV4CallOptions["prompt"]
+type StreamPart =
+  Awaited<
+    ReturnType<LanguageModelV4["doStream"]>
+  >["stream"] extends ReadableStream<infer T>
+    ? T
+    : never
+type FinishReason = Extract<StreamPart, { type: "finish" }>["finishReason"]
+type ToolResultPart = Extract<
+  Extract<LanguageModelV4Prompt[number], { role: "tool" }>["content"][number],
+  { type: "tool-result" }
+>
 
 const usage = {
   inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },

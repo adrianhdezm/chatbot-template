@@ -1,5 +1,8 @@
 packages: []
 
+# Only install package versions published at least a day ago.
+minimumReleaseAge: 1440
+
 allowBuilds:
   sharp: true
   unrs-resolver: true
