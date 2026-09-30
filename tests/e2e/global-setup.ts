@@ -5,6 +5,7 @@ import type { TestProject } from "vitest/node"
 declare module "vitest" {
   export interface ProvidedContext {
     baseUrl: string
+    headless: boolean
   }
 }
 

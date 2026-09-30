@@ -8,5 +8,7 @@ export default defineConfig({
     globalSetup: ["tests/e2e/global-setup.ts"],
     testTimeout: 60_000,
     hookTimeout: 180_000,
+    // Show the browser locally; run headless in CI.
+    provide: { headless: Boolean(process.env.CI) },
   },
 })

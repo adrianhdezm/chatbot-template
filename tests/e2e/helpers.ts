@@ -4,7 +4,7 @@ import { inject } from "vitest"
 export const baseUrl = () => inject("baseUrl")
 
 export async function launchBrowser(): Promise<Browser> {
-  return chromium.launch()
+  return chromium.launch({ headless: inject("headless") })
 }
 
 export async function openChat(page: Page) {
