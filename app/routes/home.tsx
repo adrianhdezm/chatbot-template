@@ -32,12 +32,12 @@ export function meta(): Route.MetaDescriptors {
     {
       name: "description",
       content:
-        "A chatbot template built using React Router, shadcn/ui, shadcn/react and shadcn/typeset, powered by the Vercel AI Gateway.",
+        "A chatbot template built using React Router, shadcn/ui, shadcn/react and shadcn/typeset, powered by the AI SDK and OpenAI.",
     },
   ]
 }
 
-// Models are decided on the server: real gateway models when a credential is
+// Models are decided on the server: real OpenAI models when an API key is
 // configured, otherwise the built-in mock model.
 export function loader() {
   return { models: getAvailableModels() }

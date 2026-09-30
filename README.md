@@ -1,6 +1,6 @@
 # chatbot-template
 
-A minimal chatbot template built with [React Router](https://reactrouter.com) (v8, framework mode), the [AI SDK](https://ai-sdk.dev), [shadcn/ui](https://ui.shadcn.com), [shadcn/react](https://ui.shadcn.com/docs/react/message-scroller), [shadcn/typeset](https://ui.shadcn.com/docs/typeset) and the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+A minimal chatbot template built with [React Router](https://reactrouter.com) (v8, framework mode), the [AI SDK](https://ai-sdk.dev), [shadcn/ui](https://ui.shadcn.com), [shadcn/react](https://ui.shadcn.com/docs/react/message-scroller), [shadcn/typeset](https://ui.shadcn.com/docs/typeset) and [OpenAI](https://platform.openai.com/docs/models).
 
 It is a port of [shadcn-ui/chatbot-template](https://github.com/shadcn-ui/chatbot-template) from Next.js to React Router. The components, tools, styling and tooling (Tailwind, ESLint, Prettier, TypeScript) are the same; only the framework layer changed.
 
@@ -8,9 +8,9 @@ It is a port of [shadcn-ui/chatbot-template](https://github.com/shadcn-ui/chatbo
 
 - Streaming chat with markdown rendering and shadcn/typeset
 - Tool calling example
-- Web search via each provider's built-in search tool
+- Web search via OpenAI's built-in search tool
 - Human-in-the-loop questionnaire. The model can ask clarifying questions, answered with the shadcn questionnaire component
-- **Works offline.** Without an AI Gateway key the app runs against a built-in mock model that streams scripted answers through the real AI SDK pipeline, so the whole chat protocol (streaming text, tool calls, tool results, sources, errors) can be developed and tested without spending credits.
+- **Works offline.** Without an OpenAI API key the app runs against a built-in mock model that streams scripted answers through the real AI SDK pipeline, so the whole chat protocol (streaming text, tool calls, tool results, sources, errors) can be developed and tested without spending credits.
 
 ## Local development
 
@@ -29,21 +29,14 @@ That's it. With no credentials configured the model picker offers **Mock assista
 | "Ask me a few clarifying questions"         | The human-in-the-loop questionnaire and the resumed reply    |
 | "error"                                     | How a stream error is surfaced in the UI                     |
 
-To talk to real models, give the app a gateway credential. Either pull an OIDC token from your linked Vercel project:
-
-```bash
-vercel link
-vercel env pull
-```
-
-or create an API key in the Vercel dashboard (**AI Gateway → API Keys**) and add it to `.env.local`:
+To talk to real models, create an API key in the [OpenAI dashboard](https://platform.openai.com/api-keys) and add it to `.env.local`:
 
 ```bash
 cp .env.example .env.local
-# then set AI_GATEWAY_API_KEY=...
+# then set OPENAI_API_KEY=...
 ```
 
-The React Router dev server loads `.env` files into `process.env`. When a credential is present the real models from [app/lib/models.ts](app/lib/models.ts) replace the mock in the picker.
+The React Router dev server loads `.env` files into `process.env`. When a key is present the OpenAI models from [app/lib/models.ts](app/lib/models.ts) replace the mock in the picker.
 
 ## Production
 
@@ -52,22 +45,22 @@ pnpm build
 pnpm start
 ```
 
-`pnpm start` runs `react-router-serve`, a small Node server. Set `AI_GATEWAY_API_KEY` in the environment (production builds do not read `.env` files). Any Node host works; see the [React Router deployment docs](https://reactrouter.com/start/framework/deploying) for other targets.
+`pnpm start` runs `react-router-serve`, a small Node server. Set `OPENAI_API_KEY` in the environment (production builds do not read `.env` files). Any Node host works; see the [React Router deployment docs](https://reactrouter.com/start/framework/deploying) for other targets.
 
 ## Configuration
 
 | Env var              | Required | Description                                                                                        |
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `AI_GATEWAY_API_KEY` | No       | AI Gateway API key. When unset (and no `VERCEL_OIDC_TOKEN` is present) the mock model is used.     |
+| `OPENAI_API_KEY`     | No       | OpenAI API key. When unset the mock model is used.                                                 |
 
 The model list lives in [app/lib/models.ts](app/lib/models.ts) — the first entry is the default model. [app/lib/models.server.ts](app/lib/models.server.ts) decides which models are offered and resolves the mock model.
 
 ## Security
 
-The `/api/chat` route is **public and unauthenticated** — every request spends your AI Gateway credits. That's fine for a personal demo, but before putting it in front of real traffic you should:
+The `/api/chat` route is **public and unauthenticated** — every request spends your OpenAI credits. That's fine for a personal demo, but before putting it in front of real traffic you should:
 
 - **Rate limit it.** Add a rate limiter in front of the route (a reverse proxy, or a package like [`@upstash/ratelimit`](https://github.com/upstash/ratelimit-js) called from the action) so a single client can't drain your credits (denial-of-wallet).
-- **Cap spend.** Set an [AI Gateway spend limit](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets) as a backstop.
+- **Cap spend.** Set a [usage limit](https://platform.openai.com/settings/organization/limits) on your OpenAI organization as a backstop.
 - **Add auth** if the chatbot isn't meant to be public. React Router [middleware](https://reactrouter.com/how-to/middleware) is a good place for it.
 
 The route already validates the request body, restricts models to the ones offered in [app/lib/models.server.ts](app/lib/models.server.ts), caps output tokens and step count, and aborts generation on client disconnect — but those bound a single request, not overall volume.
@@ -78,8 +71,8 @@ The route already validates the request body, restricts models to the ones offer
 - [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
 - [app/routes/home.tsx](app/routes/home.tsx) is the chat page: it loads the available models on the server, owns the `useChat` session and composes the conversation from the components below.
 - [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
-- [app/lib/mock-model.server.ts](app/lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no gateway credential is configured.
-- [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and provider-native web search (with a canned stand-in for the mock model in [app/tools/mock_web_search.ts](app/tools/mock_web_search.ts)).
+- [app/lib/mock-model.server.ts](app/lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no OpenAI API key is configured.
+- [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and OpenAI's native web search (with a canned stand-in for the mock model in [app/tools/mock_web_search.ts](app/tools/mock_web_search.ts)).
 
 Modules ending in `.server.ts` never reach the client bundle.
 

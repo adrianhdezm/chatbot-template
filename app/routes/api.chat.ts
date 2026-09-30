@@ -18,9 +18,9 @@ export function loader() {
   return Response.json({ error: "Method not allowed." }, { status: 405 })
 }
 
-// This endpoint is public and spends your AI Gateway credits on every request.
-// Before exposing it to real traffic, add a rate limit, authentication, and an
-// AI Gateway spend limit. See the README "Security" section.
+// This endpoint is public and spends your OpenAI credits on every request.
+// Before exposing it to real traffic, add a rate limit, authentication, and a
+// spend limit on your OpenAI account. See the README "Security" section.
 export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed." }, { status: 405 })
@@ -36,7 +36,7 @@ export async function action({ request }: Route.ActionArgs) {
   const model = (body as { model?: unknown })?.model
   const modelId = typeof model === "string" ? model : DEFAULT_MODEL
 
-  // Only models listed for this deployment are accepted. Without a gateway
+  // Only models listed for this deployment are accepted. Without an API key
   // credential that is the built-in mock model, which never leaves the server.
   const languageModel = resolveModel(modelId)
   if (!languageModel) {

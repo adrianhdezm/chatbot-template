@@ -148,7 +148,7 @@ function replyToToolResults(results: ToolResultPart[]): StreamPart[] {
           search.results
             .map((hit) => `- [${hit.title}](${hit.url}) — ${hit.snippet}`)
             .join("\n") +
-          "\n\n> These results are canned. Configure `AI_GATEWAY_API_KEY` to run real web searches.\n\n"
+          "\n\n> These results are canned. Configure `OPENAI_API_KEY` to run real web searches.\n\n"
         break
       }
       default:
@@ -238,7 +238,7 @@ function replyToUser(userText: string): StreamPart[] {
         "- Ask me to *search the web* for something to see sources\n" +
         "- Ask me to *ask you clarifying questions* to see the questionnaire\n" +
         "- Type `error` to see how failures are surfaced\n\n" +
-        "Set `AI_GATEWAY_API_KEY` in `.env.local` to talk to a real model."
+        "Set `OPENAI_API_KEY` in `.env.local` to talk to a real model."
     ),
     finish("stop"),
   ]
