@@ -119,7 +119,7 @@ pnpm test:e2e
 
 Each test file is self-contained: it launches its own browser and keeps its own page actions and request helpers. The build-and-serve step is in `e2e-setup.ts`, which provides `baseUrl` to the tests (read with `inject("baseUrl")`).
 
-Set `E2E_SKIP_BUILD=1` to reuse an existing `build/` and `E2E_SERVER_LOGS=1` to see the server output.
+The browser runs headless by default. Set `E2E_HEADED=1` to watch it, `E2E_SKIP_BUILD=1` to reuse an existing `build/` and `E2E_SERVER_LOGS=1` to see the server output.
 
 ## Scripts
 

@@ -40,6 +40,7 @@ const lastAssistantMessage = (page: Page) => assistantMessages(page).last()
 
 describe("chat page", () => {
   let browser: Browser
+  let page: Page
 
   beforeAll(async () => {
     browser = await chromium.launch({ headless: inject("headless") })
@@ -48,7 +49,6 @@ describe("chat page", () => {
   afterAll(async () => {
     await browser.close()
   })
-  let page: Page
 
   beforeEach(async () => {
     page = await browser.newPage()
