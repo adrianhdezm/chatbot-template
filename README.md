@@ -1,0 +1,128 @@
+# chatbot-template
+
+A minimal chatbot template built with [React Router](https://reactrouter.com) (v8, framework mode), the [AI SDK](https://ai-sdk.dev), [shadcn/ui](https://ui.shadcn.com), [shadcn/react](https://ui.shadcn.com/docs/react/message-scroller), [shadcn/typeset](https://ui.shadcn.com/docs/typeset) and the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+
+It is a port of [shadcn-ui/chatbot-template](https://github.com/shadcn-ui/chatbot-template) from Next.js to React Router. The components, tools, styling and tooling (Tailwind, ESLint, Prettier, TypeScript) are the same; only the framework layer changed.
+
+## Features
+
+- Streaming chat with markdown rendering and shadcn/typeset
+- Tool calling example
+- Web search via each provider's built-in search tool
+- Human-in-the-loop questionnaire. The model can ask clarifying questions, answered with the shadcn questionnaire component
+- **Works offline.** Without an AI Gateway key the app runs against a built-in mock model that streams scripted answers through the real AI SDK pipeline, so the whole chat protocol (streaming text, tool calls, tool results, sources, errors) can be developed and tested without spending credits.
+
+## Local development
+
+```bash
+pnpm install
+pnpm dev
+```
+
+That's it. With no credentials configured the model picker offers **Mock assistant**. Try the suggestion chips on the empty screen, or:
+
+| Say…                                        | To see…                                                      |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| "Tell me a story"                           | Rich markdown streaming (headings, table, code block)        |
+| "GitHub stats for vercel/next.js"           | A server-executed tool call and the follow-up answer         |
+| "Search the web for React Router news"      | A search tool with a "Searched N websites" sources drawer    |
+| "Ask me a few clarifying questions"         | The human-in-the-loop questionnaire and the resumed reply    |
+| "error"                                     | How a stream error is surfaced in the UI                     |
+
+To talk to real models, give the app a gateway credential. Either pull an OIDC token from your linked Vercel project:
+
+```bash
+vercel link
+vercel env pull
+```
+
+or create an API key in the Vercel dashboard (**AI Gateway → API Keys**) and add it to `.env.local`:
+
+```bash
+cp .env.example .env.local
+# then set AI_GATEWAY_API_KEY=...
+```
+
+The React Router dev server loads `.env` files into `process.env`. When a credential is present the real models from [lib/models.ts](lib/models.ts) replace the mock in the picker.
+
+## Production
+
+```bash
+pnpm build
+pnpm start
+```
+
+`pnpm start` runs `react-router-serve`, a small Node server. Set `AI_GATEWAY_API_KEY` in the environment (production builds do not read `.env` files). Any Node host works; see the [React Router deployment docs](https://reactrouter.com/start/framework/deploying) for other targets.
+
+## Configuration
+
+| Env var              | Required | Description                                                                                        |
+| -------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `AI_GATEWAY_API_KEY` | No       | AI Gateway API key. When unset (and no `VERCEL_OIDC_TOKEN` is present) the mock model is used.     |
+
+The model list lives in [lib/models.ts](lib/models.ts) — the first entry is the default model. [lib/models.server.ts](lib/models.server.ts) decides which models are offered and resolves the mock model.
+
+## Security
+
+The `/api/chat` route is **public and unauthenticated** — every request spends your AI Gateway credits. That's fine for a personal demo, but before putting it in front of real traffic you should:
+
+- **Rate limit it.** Add a rate limiter in front of the route (a reverse proxy, or a package like [`@upstash/ratelimit`](https://github.com/upstash/ratelimit-js) called from the action) so a single client can't drain your credits (denial-of-wallet).
+- **Cap spend.** Set an [AI Gateway spend limit](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets) as a backstop.
+- **Add auth** if the chatbot isn't meant to be public. React Router [middleware](https://reactrouter.com/how-to/middleware) is a good place for it.
+
+The route already validates the request body, restricts models to the ones offered in [lib/models.server.ts](lib/models.server.ts), caps output tokens and step count, and aborts generation on client disconnect — but those bound a single request, not overall volume.
+
+## How it works
+
+- [app/routes.ts](app/routes.ts) declares the two routes: the chat page and the `/api/chat` resource route.
+- [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
+- [app/routes/home.tsx](app/routes/home.tsx) loads the available models on the server and renders the chat.
+- [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
+- [components/chat.tsx](components/chat.tsx) renders the conversation with `useChat` and shadcn chat primitives.
+- [lib/mock-model.server.ts](lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no gateway credential is configured.
+- [tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [tools/index.ts](tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and provider-native web search (with a canned stand-in for the mock model in [tools/mock_web_search.ts](tools/mock_web_search.ts)).
+
+Modules ending in `.server.ts` never reach the client bundle.
+
+## Tool parts
+
+Assistant messages are a list of typed parts. [components/chat-message.tsx](components/chat-message.tsx) switches on `part.type` and delegates each one to a component in [components/parts/](components/parts):
+
+| Part type          | Component                                                    | Renders                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`             | [text-part.tsx](components/parts/text-part.tsx)             | Markdown via react-markdown and shadcn/typeset.                                                                                             |
+| `tool-github_repo` | [github-repo-part.tsx](components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                          |
+| `tool-web_search`  | [web-search-part.tsx](components/parts/web-search-part.tsx) | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                  |
+| `tool-ask_user`    | [ask-user-part.tsx](components/parts/ask-user-part.tsx)     | The answered questions inline. Pending questions render in [question-card.tsx](components/question-card.tsx), pinned to the scroller bottom. |
+| `source-url`       | [sources-part.tsx](components/parts/sources-part.tsx)       | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                      |
+
+Tool parts move through states as the stream progresses — `input-streaming` → `input-available` → `output-available` (or `output-error`) — and each component switches on `part.state` to show progress, results, and failures.
+
+### Adding your own tool
+
+1. Create `tools/<name>.ts` (the filename is the model-facing tool name) exporting a `tool()` with a `description`, an `inputSchema`, and an `execute` function (omit `execute` for tools the user answers in the UI, like `ask_user`), then register it in [tools/index.ts](tools/index.ts).
+2. Add a part component in [components/parts/](components/parts) and a `case "tool-<name>"` in [chat-message.tsx](components/chat-message.tsx).
+3. Optionally teach the mock model about it in [lib/mock-model.server.ts](lib/mock-model.server.ts) so it can be exercised offline.
+
+Message types are inferred from the tool definitions via `InferUITools`, so `part.input` and `part.output` are fully typed in your part component — renaming a tool field is a build error, not a silent `undefined`.
+
+## Adding components
+
+```bash
+npx shadcn@latest add button
+```
+
+## Scripts
+
+| Script           | What it does                                         |
+| ---------------- | ---------------------------------------------------- |
+| `pnpm dev`       | Start the dev server with HMR                        |
+| `pnpm build`     | Build client and server bundles into `build/`        |
+| `pnpm start`     | Serve the production build                           |
+| `pnpm typecheck` | Generate route types and run `tsc`                   |
+| `pnpm lint`      | ESLint                                               |
+| `pnpm format`    | Prettier (with the Tailwind class sorter)            |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
