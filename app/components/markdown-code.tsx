@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react"
 import { CheckIcon, CopyIcon } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "~/components/theme-provider"
 import ShikiHighlighter, { rehypeInlineCodeProperty } from "react-shiki"
 
 import { Button } from "~/components/ui/button"
