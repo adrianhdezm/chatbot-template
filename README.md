@@ -76,9 +76,8 @@ The route already validates the request body, restricts models to the ones offer
 
 - [app/routes.ts](app/routes.ts) declares the two routes: the chat page and the `/api/chat` resource route.
 - [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
-- [app/routes/home.tsx](app/routes/home.tsx) loads the available models on the server and renders the chat.
+- [app/routes/home.tsx](app/routes/home.tsx) is the chat page: it loads the available models on the server, owns the `useChat` session and composes the conversation from the components below.
 - [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
-- [app/components/chat.tsx](app/components/chat.tsx) renders the conversation with `useChat` and shadcn chat primitives.
 - [app/lib/mock-model.server.ts](app/lib/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no gateway credential is configured.
 - [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and provider-native web search (with a canned stand-in for the mock model in [app/tools/mock_web_search.ts](app/tools/mock_web_search.ts)).
 
