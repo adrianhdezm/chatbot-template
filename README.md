@@ -104,6 +104,21 @@ Message types are inferred from the tool definitions via `InferUITools`, so `par
 npx shadcn@latest add button
 ```
 
+## Testing
+
+End-to-end tests live in [tests/e2e](tests/e2e) and run with [Vitest](https://vitest.dev) and [Playwright](https://playwright.dev). The global setup builds the app and serves it in mock mode (no `OPENAI_API_KEY`), so the suite never calls OpenAI:
+
+```bash
+pnpm exec playwright install chromium   # once
+pnpm test:e2e
+```
+
+- `api.test.ts` checks the `/api/chat` stream against the AI SDK UI message protocol: text deltas, the two-step tool call, the client-side `ask_user` stop and resume, source citations, errors and request validation.
+- `chat.test.ts` drives the page in a browser: markdown rendering, tool parts, the questionnaire round trip, the sources drawer, stop, error display and New Chat.
+- `theme.test.ts` covers the OS preference, the `d` hotkey, persistence and the pre-hydration theme script.
+
+Set `E2E_SKIP_BUILD=1` to reuse an existing `build/` and `E2E_SERVER_LOGS=1` to see the server output.
+
 ## Scripts
 
 | Script           | What it does                                         |
@@ -114,6 +129,7 @@ npx shadcn@latest add button
 | `pnpm typecheck` | Generate route types and run `tsc`                   |
 | `pnpm lint`      | ESLint                                               |
 | `pnpm format`    | Prettier (with the Tailwind class sorter)            |
+| `pnpm test:e2e`  | Build, serve in mock mode and run the Playwright tests |
 
 ## License
 
