@@ -1,5 +1,5 @@
 // Client-safe entry point for the mock model. The implementation lives in
-// ./model.server.ts and never reaches the browser bundle.
+// ./mock-model.server.ts and never reaches the browser bundle.
 
 import type { ChatModel } from "~/lib/models"
 

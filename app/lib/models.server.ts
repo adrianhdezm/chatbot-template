@@ -3,7 +3,7 @@ import type { LanguageModel } from "ai"
 
 import { isModelAllowed, MODELS, type ChatModel } from "~/lib/models"
 import { isMockModel, MOCK_MODEL } from "~/mock"
-import { createMockModel } from "~/mock/model.server"
+import { createMockModel } from "~/mock/mock-model.server"
 
 // The OpenAI provider reads OPENAI_API_KEY from the environment.
 export function isOpenAIConfigured() {

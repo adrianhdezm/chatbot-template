@@ -71,8 +71,8 @@ The route already validates the request body, restricts models to the ones offer
 - [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
 - [app/routes/home.tsx](app/routes/home.tsx) is the chat page: it loads the available models on the server, owns the `useChat` session and composes the conversation from the components below.
 - [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
-- [app/mock/model.server.ts](app/mock/model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no OpenAI API key is configured.
-- [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and OpenAI's native web search (the mock model gets a canned stand-in from [app/mock/web-search.ts](app/mock/web-search.ts)).
+- [app/mock/mock-model.server.ts](app/mock/mock-model.server.ts) implements the AI SDK `LanguageModelV4` interface with scripted responses. It is only used when no OpenAI API key is configured.
+- [app/tools/](tools) defines the tools — one file per tool (the filename is the model-facing tool name), composed in [app/tools/index.ts](app/tools/index.ts): a server-executed GitHub repo lookup, the interactive `ask_user` questionnaire, and OpenAI's native web search (the mock model gets a canned stand-in from [app/mock/mock-web-search.ts](app/mock/mock-web-search.ts)).
 
 Modules ending in `.server.ts` never reach the client bundle.
 
@@ -94,7 +94,7 @@ Tool parts move through states as the stream progresses — `input-streaming` �
 
 1. Create `app/tools/<name>.ts` (the filename is the model-facing tool name) exporting a `tool()` with a `description`, an `inputSchema`, and an `execute` function (omit `execute` for tools the user answers in the UI, like `ask_user`), then register it in [app/tools/index.ts](app/tools/index.ts).
 2. Add a part component in [app/components/parts/](app/components/parts) and a `case "tool-<name>"` in [chat-message.tsx](app/components/chat-message.tsx).
-3. Optionally teach the mock model about it in [app/mock/model.server.ts](app/mock/model.server.ts) so it can be exercised offline.
+3. Optionally teach the mock model about it in [app/mock/mock-model.server.ts](app/mock/mock-model.server.ts) so it can be exercised offline.
 
 Message types are inferred from the tool definitions via `InferUITools`, so `part.input` and `part.output` are fully typed in your part component — renaming a tool field is a build error, not a silent `undefined`.
 
