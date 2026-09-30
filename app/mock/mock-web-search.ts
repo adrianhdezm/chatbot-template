@@ -9,7 +9,7 @@ export const mockWebSearch = tool({
   inputSchema: z.object({
     query: z.string().describe("The search query"),
   }),
-  execute: async ({ query }) => ({
+  execute: ({ query }) => ({
     query,
     results: [
       {

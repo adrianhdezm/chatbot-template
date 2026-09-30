@@ -1,6 +1,17 @@
 import { tool } from "ai"
 import { z } from "zod"
 
+// The subset of the GitHub REST repository payload the tool uses.
+const githubRepoResponse = z.object({
+  full_name: z.string().optional(),
+  description: z.string().nullish(),
+  stargazers_count: z.number().optional(),
+  forks_count: z.number().optional(),
+  open_issues_count: z.number().optional(),
+  language: z.string().nullish(),
+  html_url: z.string().optional(),
+})
+
 export const githubRepo = tool({
   description:
     "Get public stats for a GitHub repository: stars, forks, open issues, language, and description.",
@@ -36,15 +47,19 @@ export const githubRepo = tool({
       if (!res.ok) {
         return { error: `Could not find repository ${repo}.` }
       }
-      const data = await res.json()
+      const parsed = githubRepoResponse.safeParse(await res.json())
+      if (!parsed.success) {
+        return { error: `Unexpected response from GitHub for ${repo}.` }
+      }
+      const data = parsed.data
       return {
-        repo: String(data.full_name ?? repo),
-        description: String(data.description ?? ""),
-        stars: Number(data.stargazers_count ?? 0),
-        forks: Number(data.forks_count ?? 0),
-        openIssues: Number(data.open_issues_count ?? 0),
-        language: String(data.language ?? "Unknown"),
-        url: String(data.html_url ?? `https://github.com/${repo}`),
+        repo: data.full_name ?? repo,
+        description: data.description ?? "",
+        stars: data.stargazers_count ?? 0,
+        forks: data.forks_count ?? 0,
+        openIssues: data.open_issues_count ?? 0,
+        language: data.language ?? "Unknown",
+        url: data.html_url ?? `https://github.com/${repo}`,
       }
     } catch {
       return { error: `Could not reach GitHub for ${repo}.` }

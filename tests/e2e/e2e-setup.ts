@@ -31,7 +31,9 @@ async function waitForServer(url: string, child: ChildProcess) {
     }
     try {
       const response = await fetch(url)
-      if (response.ok) return
+      if (response.ok) {
+        return
+      }
     } catch {
       // Not up yet.
     }

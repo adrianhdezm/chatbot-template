@@ -8,6 +8,7 @@ import {
 } from "ai"
 
 import type { Route } from "./+types/api.chat"
+import { appContext } from "~/context"
 import { DEFAULT_MODEL } from "~/lib/models"
 import { resolveModel } from "~/lib/models.server"
 import { getTools, type ChatUIMessage } from "~/tools"
@@ -21,7 +22,7 @@ export function loader() {
 // This endpoint is public and spends your OpenAI credits on every request.
 // Before exposing it to real traffic, add a rate limit, authentication, and a
 // spend limit on your OpenAI account. See the README "Security" section.
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed." }, { status: 405 })
   }
@@ -38,7 +39,8 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Only models listed for this deployment are accepted. Without an API key
   // credential that is the built-in mock model, which never leaves the server.
-  const languageModel = resolveModel(modelId)
+  const { env } = context.get(appContext)
+  const languageModel = resolveModel(env, modelId)
   if (!languageModel) {
     return Response.json(
       { error: `Model ${modelId} is not available.` },
@@ -53,7 +55,7 @@ export async function action({ request }: Route.ActionArgs) {
   try {
     const validated = await validateUIMessages<ChatUIMessage>({
       messages: (body as { messages?: unknown })?.messages,
-      tools: tools as Parameters<typeof validateUIMessages>[0]["tools"],
+      tools: tools,
     })
     messages = validated
   } catch {

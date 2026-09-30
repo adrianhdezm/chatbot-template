@@ -3,6 +3,7 @@ import { useChat } from "@ai-sdk/react"
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai"
 
 import type { Route } from "./+types/home"
+import { appContext } from "~/context"
 import { getAvailableModels } from "~/lib/models.server"
 import type { ChatUIMessage } from "~/tools"
 import { ChatMessage } from "~/components/chat-message"
@@ -39,8 +40,9 @@ export function meta(): Route.MetaDescriptors {
 
 // Models are decided on the server: real OpenAI models when an API key is
 // configured, otherwise the built-in mock model.
-export function loader() {
-  return { models: getAvailableModels() }
+export function loader({ context }: Route.LoaderArgs) {
+  const { env } = context.get(appContext)
+  return { models: getAvailableModels(env) }
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
@@ -75,7 +77,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       : undefined
 
   function send(text: string) {
-    sendMessage({ text }, { body: { model: resolvedModel } })
+    void sendMessage({ text }, { body: { model: resolvedModel } })
   }
 
   // --- Page ---------------------------------------------------------------
@@ -125,14 +127,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               {pendingQuestion && (
                 <QuestionCard
                   part={pendingQuestion}
-                  onAnswer={(toolCallId, answer) =>
-                    addToolOutput({
+                  onAnswer={(toolCallId, answer) => {
+                    void addToolOutput({
                       tool: "ask_user",
                       toolCallId,
                       output: answer,
                       options: { body: { model: resolvedModel } },
                     })
-                  }
+                  }}
                 />
               )}
             </MessageScrollerViewport>
@@ -154,7 +156,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           onModelChange={setModel}
           isBusy={isBusy}
           onSubmit={send}
-          onStop={() => stop()}
+          onStop={() => void stop()}
         />
       </div>
     </div>

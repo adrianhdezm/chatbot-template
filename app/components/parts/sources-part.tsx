@@ -75,6 +75,8 @@ export function SourcesPart({ parts }: { parts: ChatMessagePart[] }) {
                     size="sm"
                     className="rounded-xl"
                     render={
+                      // The link content comes from the Item children via base-ui's render prop.
+                      // eslint-disable-next-line jsx-a11y/anchor-has-content
                       <a href={source.url} target="_blank" rel="noreferrer" />
                     }
                     role="listitem"

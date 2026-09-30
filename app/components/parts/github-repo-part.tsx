@@ -4,10 +4,11 @@ import type { GithubRepoToolPart } from "~/tools"
 import { safeHttpUrl } from "~/lib/utils"
 import { Spinner } from "~/components/ui/spinner"
 
-const formatCount = new Intl.NumberFormat("en", {
+const countFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
-}).format
+})
+const formatCount = (value: number) => countFormatter.format(value)
 
 export function GithubRepoPart({ part }: { part: GithubRepoToolPart }) {
   switch (part.state) {

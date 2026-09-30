@@ -29,7 +29,9 @@ export function ModelSelect({
       items={items}
       value={value}
       onValueChange={(next) => {
-        if (typeof next === "string") onValueChange(next)
+        if (typeof next === "string") {
+          onValueChange(next)
+        }
       }}
     >
       <SelectTrigger aria-label="Model" className="bg-background">

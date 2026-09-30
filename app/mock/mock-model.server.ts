@@ -1,7 +1,12 @@
-import { simulateReadableStream, type LanguageModel } from "ai"
+import {
+  simulateReadableStream,
+  type InferToolOutput,
+  type LanguageModel,
+} from "ai"
 
 import { MOCK_MODEL } from "~/mock"
 import type { MockWebSearchOutput } from "~/mock/mock-web-search"
+import type { githubRepo } from "~/tools/github_repo"
 
 // A LanguageModelV4 implementation that never calls a provider. It scripts a
 // handful of scenarios so every part of the UI message stream protocol can be
@@ -77,7 +82,9 @@ function toolCall(toolName: string, input: unknown): StreamPart[] {
 
 function lastUserText(prompt: LanguageModelV4Prompt) {
   const message = [...prompt].reverse().find((m) => m.role === "user")
-  if (!message || message.role !== "user") return ""
+  if (!message || message.role !== "user") {
+    return ""
+  }
   return message.content
     .filter((part) => part.type === "text")
     .map((part) => part.text)
@@ -105,8 +112,8 @@ function replyToToolResults(results: ToolResultPart[]): StreamPart[] {
 
     switch (result.toolName) {
       case "github_repo": {
-        const repo = value as Record<string, unknown>
-        if (typeof repo.error === "string") {
+        const repo = value as InferToolOutput<typeof githubRepo>
+        if ("error" in repo) {
           reply += `I couldn't fetch that repository: ${repo.error}\n\n`
           break
         }
@@ -262,7 +269,7 @@ export function createMockModel(): LanguageModelV4 {
     modelId: MOCK_MODEL.id,
     supportedUrls: {},
 
-    async doGenerate(options: LanguageModelV4CallOptions) {
+    doGenerate(options: LanguageModelV4CallOptions) {
       const parts = script(options.prompt)
       const content: Array<
         | { type: "text"; text: string }
@@ -272,7 +279,9 @@ export function createMockModel(): LanguageModelV4 {
       let buffer = ""
 
       for (const part of parts) {
-        if (part.type === "text-delta") buffer += part.delta
+        if (part.type === "text-delta") {
+          buffer += part.delta
+        }
         if (part.type === "text-end") {
           content.push({ type: "text", text: buffer })
           buffer = ""
@@ -280,14 +289,18 @@ export function createMockModel(): LanguageModelV4 {
         if (part.type === "tool-call" || part.type === "source") {
           content.push(part)
         }
-        if (part.type === "finish") finishReason = part.finishReason
-        if (part.type === "error") throw part.error
+        if (part.type === "finish") {
+          finishReason = part.finishReason
+        }
+        if (part.type === "error") {
+          throw part.error
+        }
       }
 
-      return { content, finishReason, usage, warnings: [] }
+      return Promise.resolve({ content, finishReason, usage, warnings: [] })
     },
 
-    async doStream(options: LanguageModelV4CallOptions) {
+    doStream(options: LanguageModelV4CallOptions) {
       const parts: StreamPart[] = [
         { type: "stream-start", warnings: [] },
         {
@@ -298,13 +311,13 @@ export function createMockModel(): LanguageModelV4 {
         ...script(options.prompt),
       ]
 
-      return {
+      return Promise.resolve({
         stream: simulateReadableStream({
           chunks: parts,
           initialDelayInMs: 400,
           chunkDelayInMs: 20,
         }),
-      }
+      })
     },
   }
 }

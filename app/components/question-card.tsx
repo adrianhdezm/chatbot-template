@@ -47,10 +47,13 @@ export function QuestionCard({
               const formData = new FormData(event.currentTarget)
               onAnswer(
                 part.toolCallId,
-                questions.map((question, index) => ({
-                  question: question.question,
-                  answer: String(formData.get(`q${index}`) ?? ""),
-                }))
+                questions.map((question, index) => {
+                  const value = formData.get(`q${index}`)
+                  return {
+                    question: question.question,
+                    answer: typeof value === "string" ? value : "",
+                  }
+                })
               )
             }}
           >

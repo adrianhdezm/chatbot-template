@@ -26,7 +26,9 @@ function readTheme(): Theme {
 }
 
 function resolveTheme(theme: Theme): ResolvedTheme {
-  if (theme !== "system") return theme
+  if (theme !== "system") {
+    return theme
+  }
   return window.matchMedia(DARK_QUERY).matches ? "dark" : "light"
 }
 
@@ -88,7 +90,9 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   )
 
   React.useEffect(() => {
-    if (resolvedTheme) applyTheme(resolvedTheme)
+    if (resolvedTheme) {
+      applyTheme(resolvedTheme)
+    }
   }, [resolvedTheme])
 
   const setTheme = React.useCallback((next: Theme) => {

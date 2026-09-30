@@ -68,6 +68,7 @@ The route already validates the request body, restricts models to the ones offer
 ## How it works
 
 - [app/routes.ts](app/routes.ts) declares the two routes: the chat page and the `/api/chat` resource route.
+- [app/context.ts](app/context.ts) defines the request context (`appContext`). The root middleware in [app/root.tsx](app/root.tsx) fills it from the environment once per request, and loaders and actions read it with `context.get(appContext)`, so no route or lib code touches `process.env`. Moving to a custom server (Hono, Cloudflare Workers) only means populating the same context there.
 - [app/routes/api.chat.ts](app/routes/api.chat.ts) is a resource route whose `action` streams responses with `streamText` and returns the AI SDK UI message stream.
 - [app/routes/home.tsx](app/routes/home.tsx) is the chat page: it loads the available models on the server, owns the `useChat` session and composes the conversation from the components below.
 - [app/root.tsx](app/root.tsx) is the document shell: fonts, global CSS, theme provider and site header.
@@ -129,7 +130,7 @@ The browser runs headless by default. Set `E2E_HEADED=1` to watch it, `E2E_SKIP_
 | `pnpm build`     | Build client and server bundles into `build/`        |
 | `pnpm start`     | Serve the production build                           |
 | `pnpm typecheck` | Generate route types and run `tsc`                   |
-| `pnpm lint`      | ESLint                                               |
+| `pnpm lint`      | ESLint (type-aware, with jsx-a11y and Prettier)      |
 | `pnpm format`    | Prettier (with the Tailwind class sorter)            |
 | `pnpm test:e2e`  | Build, serve in mock mode and run the Playwright tests |
 

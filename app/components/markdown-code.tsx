@@ -1,4 +1,5 @@
 import {
+  Children,
   useCallback,
   useEffect,
   useRef,
@@ -46,7 +47,7 @@ function CopyButton({ code }: { code: string }) {
       size="icon-xs"
       aria-label={copied ? "Copied" : "Copy code"}
       className="absolute top-2 right-2 z-10 bg-transparent text-muted-foreground hover:text-foreground"
-      onClick={onCopy}
+      onClick={() => void onCopy()}
     >
       <Icon />
     </Button>
@@ -60,7 +61,10 @@ export function MarkdownCode({
   ...props
 }: MarkdownCodeProps) {
   const { resolvedTheme } = useTheme()
-  const code = String(children).replace(/\n$/, "")
+  const code = Children.toArray(children)
+    .filter((child): child is string => typeof child === "string")
+    .join("")
+    .replace(/\n$/, "")
   const language = /language-([\w-]+)/.exec(className || "")?.[1]
   const syntaxTheme = resolvedTheme === "dark" ? "github-dark" : "github-light"
 

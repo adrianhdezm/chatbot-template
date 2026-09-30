@@ -30,7 +30,9 @@ export function PromptForm({
   function handleSubmit(event?: React.FormEvent) {
     event?.preventDefault()
     const text = input.trim()
-    if (!text || isBusy) return
+    if (!text || isBusy) {
+      return
+    }
     onSubmit(text)
     setInput("")
   }

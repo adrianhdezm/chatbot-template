@@ -11,6 +11,19 @@ import type { Route } from "./+types/root"
 import "./app.css"
 import { SiteHeader } from "~/components/site-header"
 import { ThemeProvider } from "~/components/theme-provider"
+import { appContext } from "~/context"
+
+// Server-only: expose the environment to every loader and action through the
+// request context. Swap this for a custom server (Hono, Cloudflare) later
+// without touching the routes.
+export const middleware: Route.MiddlewareFunction[] = [
+  ({ context }, next) => {
+    context.set(appContext, {
+      env: { OPENAI_API_KEY: process.env.OPENAI_API_KEY },
+    })
+    return next()
+  },
+]
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico" },
