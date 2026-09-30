@@ -87,7 +87,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </Empty>
         </div>
       ) : (
-        <MessageScrollerProvider>
+        <MessageScrollerProvider autoScroll>
           <MessageScroller className="flex-1">
             <MessageScrollerViewport>
               <MessageScrollerContent className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-6">

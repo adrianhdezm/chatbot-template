@@ -103,6 +103,25 @@ describe('chat page', () => {
     expect(await drawer.locator('a[href^="https://"]').count()).toBe(3);
   });
 
+  it('keeps the newest streamed content in view', async () => {
+    await page.getByRole('button', { name: 'Tell me a story' }).click();
+    await waitForReply(page);
+
+    // The reply is taller than the viewport, so following the stream means the
+    // end of the last message is visible and the "scroll to end" button is idle.
+    const viewport = page.getByRole('region', { name: 'Messages' });
+    const { messageBottom, viewportBottom } = await viewport.evaluate((element) => {
+      const items = element.querySelectorAll('[data-slot="message-scroller-item"]');
+      const last = items[items.length - 1];
+      return {
+        messageBottom: last?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+        viewportBottom: element.getBoundingClientRect().bottom
+      };
+    });
+    expect(messageBottom).toBeLessThanOrEqual(viewportBottom + 1);
+    await expect(page.getByRole('button', { name: 'Scroll to end' }).getAttribute('data-active')).resolves.toBe('false');
+  });
+
   it('can stop a response while it streams', async () => {
     await send(page, 'tell me a story');
     // Let the reply start streaming, then interrupt it.
