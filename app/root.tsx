@@ -1,0 +1,88 @@
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse } from 'react-router';
+
+import { SiteHeader } from '~/components/site-header';
+import { ThemeProvider } from '~/components/theme-provider';
+
+import { appContext } from '~/context';
+
+import type { Route } from './+types/root';
+import './app.css';
+
+// Server-only: expose the environment to every loader and action through the
+// request context. Swap this for a custom server (Hono, Cloudflare) later
+// without touching the routes.
+export const middleware: Route.MiddlewareFunction[] = [
+  ({ context }, next) => {
+    context.set(appContext, {
+      env: { OPENAI_API_KEY: process.env.OPENAI_API_KEY }
+    });
+    return next();
+  }
+];
+
+export const links: Route.LinksFunction = () => [
+  { rel: 'icon', href: '/favicon.ico' },
+  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+  {
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous'
+  },
+  {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap'
+  }
+];
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning className="font-sans antialiased">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body>
+        <ThemeProvider>
+          <div className="flex h-svh flex-col">
+            <SiteHeader />
+            {children}
+          </div>
+        </ThemeProvider>
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+export default function App() {
+  return <Outlet />;
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  let message = 'Oops!';
+  let details = 'An unexpected error occurred.';
+  let stack: string | undefined;
+
+  if (isRouteErrorResponse(error)) {
+    message = error.status === 404 ? '404' : 'Error';
+    details = error.status === 404 ? 'The requested page could not be found.' : error.statusText || details;
+  } else if (import.meta.env.DEV && error && error instanceof Error) {
+    details = error.message;
+    stack = error.stack;
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-6 py-16">
+      <h1 className="text-2xl font-semibold">{message}</h1>
+      <p className="text-muted-foreground">{details}</p>
+      {stack && (
+        <pre className="w-full overflow-x-auto rounded-lg bg-muted p-4 text-xs">
+          <code>{stack}</code>
+        </pre>
+      )}
+    </main>
+  );
+}
