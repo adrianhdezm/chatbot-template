@@ -45,6 +45,18 @@ function text(content: string): StreamPart[] {
   return [{ type: 'text-start', id }, ...chunks.map((delta): StreamPart => ({ type: 'text-delta', id, delta })), { type: 'text-end', id }];
 }
 
+// Stream a reasoning block the way reasoning models do. The UI shows it as a
+// "Thinking" step in the Trace and the server times it into message metadata.
+function reasoning(content: string): StreamPart[] {
+  const id = nextId('rsn');
+  const chunks = content.match(/\S+\s*|\s+/g) ?? [];
+  return [
+    { type: 'reasoning-start', id },
+    ...chunks.map((delta): StreamPart => ({ type: 'reasoning-delta', id, delta })),
+    { type: 'reasoning-end', id }
+  ];
+}
+
 // Emit a tool call the way real providers do: streamed input deltas first,
 // then the complete call. The UI moves the part from `input-streaming` to
 // `input-available` as these arrive.
@@ -181,12 +193,20 @@ function replyToUser(userText: string): StreamPart[] {
 
   const repo = /\b([\w.-]+\/[\w.-]+)\b/.exec(userText)?.[1];
   if (repo && /\b(github|repo|repository|stars)\b/.test(lower)) {
-    return [...toolCall('github_repo', { repo }), finish('tool-calls')];
+    return [
+      ...reasoning(`The user wants stats for ${repo}. I'll look the repository up with the github_repo tool and summarize the numbers.`),
+      ...toolCall('github_repo', { repo }),
+      finish('tool-calls')
+    ];
   }
 
   if (/\b(search|latest|news|what'?s new)\b/.test(lower)) {
     const query = userText.replace(/^search the web for\s*/i, '').trim();
-    return [...toolCall('web_search', { query }), finish('tool-calls')];
+    return [
+      ...reasoning('This needs current information, so I should search the web before answering.'),
+      ...toolCall('web_search', { query }),
+      finish('tool-calls')
+    ];
   }
 
   if (/\b(clarif\w*|ask me|questions?)\b/.test(lower)) {
@@ -208,6 +228,16 @@ function replyToUser(userText: string): StreamPart[] {
     ];
   }
 
+  if (/\b(think|reason\w*)\b/.test(lower)) {
+    return [
+      ...reasoning(
+        'Let me work through this step by step. First, restate the question. Next, consider the obvious answer and check it against edge cases. The obvious answer holds, so I can reply concisely.'
+      ),
+      ...text('Here is my answer after thinking it through: the obvious solution holds up once the edge cases are checked.'),
+      finish('stop')
+    ];
+  }
+
   if (/\b(story|markdown)\b/.test(lower)) {
     return [...text(MARKDOWN_SHOWCASE), finish('stop')];
   }
@@ -220,6 +250,7 @@ function replyToUser(userText: string): StreamPart[] {
         '- Ask for the GitHub stats of `vercel/next.js` to see a server-executed tool\n' +
         '- Ask me to *search the web* for something to see sources\n' +
         '- Ask me to *ask you clarifying questions* to see the questionnaire\n' +
+        '- Ask me to *think* about something to see a reasoning step\n' +
         '- Type `error` to see how failures are surfaced\n\n' +
         'Set `OPENAI_API_KEY` in `.env.local` to talk to a real model.'
     ),

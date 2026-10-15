@@ -18,7 +18,10 @@ const stopButton = (page: Page) => page.getByRole('button', { name: 'Stop genera
 // Wait for a request to start (stop button or thinking indicator) and then
 // for the response to finish (send button back).
 async function waitForReply(page: Page) {
-  await stopButton(page).or(page.getByText('Thinking…')).first().waitFor();
+  await stopButton(page)
+    .or(page.getByText('Thinking', { exact: true }))
+    .first()
+    .waitFor();
   await sendButton(page).waitFor();
 }
 
@@ -52,7 +55,7 @@ describe('chat page', () => {
     expect(await page.getByRole('button', { name: 'Tell me a story' }).count()).toBe(1);
   });
 
-  it('streams a markdown reply with syntax-highlighted code', async () => {
+  it('streams a markdown reply with a syntax-highlighted code block', async () => {
     await page.getByRole('button', { name: 'Tell me a story' }).click();
     await waitForReply(page);
 
@@ -60,18 +63,30 @@ describe('chat page', () => {
     await expect(reply.locator('h1').innerText()).resolves.toBe('The Lighthouse Keeper');
     expect(await reply.locator('table').count()).toBe(1);
     expect(await reply.locator('blockquote').count()).toBe(1);
-    expect(await reply.locator('.shiki').count()).toBe(1);
-    expect(await reply.getByRole('button', { name: 'Copy code' }).count()).toBe(1);
+
+    const codeBlock = reply.locator('[data-slot="code-block"]');
+    expect(await codeBlock.count()).toBe(1);
+    await expect(codeBlock.locator('[data-slot="code-block-title"]').innerText()).resolves.toBe('ts');
+    // Shiki colors tokens through CSS variables once the grammar has loaded.
+    await codeBlock.locator('span[style*="--shiki-light"]').first().waitFor();
+    expect(await codeBlock.getByRole('button', { name: 'Copy' }).count()).toBe(1);
   });
 
-  it('shows a server-executed tool call and the follow-up answer', async () => {
+  it('shows reasoning and a server-executed tool call as steps in a trace', async () => {
     await send(page, 'What are the GitHub stats for vercel/next.js?');
     await waitForReply(page);
 
-    const reply = await lastAssistantMessage(page).innerText();
+    const reply = lastAssistantMessage(page);
+    const trace = reply.locator('[data-slot="trace"]').first();
+    // The model reasons first, then calls the tool: both are steps in one Trace.
+    await expect(trace.innerText()).resolves.toMatch(/^Thought/);
     // The lookup hits the real GitHub API, so accept either outcome.
-    expect(reply).toMatch(/vercel\/next\.js/);
-    expect(reply).toMatch(/stats for|couldn't fetch/i);
+    const step = trace.getByRole('button', { name: /(Looked up|Failed to look up) vercel\/next\.js/ });
+    expect(await step.count()).toBe(1);
+
+    await step.click();
+    await reply.locator('[data-slot="code-block"]').waitFor();
+    await expect(reply.innerText()).resolves.toMatch(/stats for|couldn't fetch/i);
   });
 
   it('asks clarifying questions and resumes after they are answered', async () => {
@@ -85,22 +100,61 @@ describe('chat page', () => {
     await page.getByRole('button', { name: 'Answer' }).click();
 
     await waitForReply(page);
-    const reply = await lastAssistantMessage(page).innerText();
-    expect(reply).toContain('5–8');
-    expect(reply).toContain('Pescatarian');
-    expect(reply).toContain('Suggested plan');
+    const reply = lastAssistantMessage(page);
+    const text = await reply.innerText();
+    expect(text).toContain('5–8');
+    expect(text).toContain('Pescatarian');
+    expect(text).toContain('Suggested plan');
     expect(await page.locator('[data-slot="questionnaire"]').count()).toBe(0);
+    // The answered questions collapse into a step of the trace.
+    expect(await reply.getByRole('button', { name: 'Asked 2 questions' }).count()).toBe(1);
   });
 
-  it('lists the sources of a web search in a drawer', async () => {
+  it('lists the sources of a web search', async () => {
     await send(page, 'Search the web for the latest React Router release');
     await waitForReply(page);
 
-    await expect(lastAssistantMessage(page).innerText()).resolves.toContain('Searched the web');
-    await page.getByRole('button', { name: 'Searched 3 websites' }).click();
-    const drawer = page.getByRole('dialog');
-    await drawer.waitFor();
-    expect(await drawer.locator('a[href^="https://"]').count()).toBe(3);
+    const reply = lastAssistantMessage(page);
+    await expect(reply.innerText()).resolves.toContain('Searched the web');
+    const sources = reply.locator('a[target="_blank"]:has([data-slot="trace-line"])');
+    await expect(sources.first().isVisible()).resolves.toBe(false);
+
+    await reply.getByRole('button', { name: 'Used 3 sources' }).click();
+    await sources.first().waitFor();
+    expect(await sources.count()).toBe(3);
+  });
+
+  it('shows reasoning as a timed, collapsible step', async () => {
+    await send(page, 'Think about it before answering');
+    await waitForReply(page);
+
+    const reply = lastAssistantMessage(page);
+    const step = reply.getByRole('button', { name: /^Thought \d+s$/ });
+    expect(await step.count()).toBe(1);
+    // Open while the model thinks, collapsed once it is done.
+    const reasoning = reply.getByText('Let me work through this step by step', { exact: false });
+    await expect(reasoning.isVisible()).resolves.toBe(false);
+
+    await step.click();
+    await reasoning.waitFor();
+    await expect(reply.innerText()).resolves.toContain('the obvious solution holds up');
+  });
+
+  it('copies a reply and retries the last one', async () => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await send(page, 'hello');
+    await waitForReply(page);
+
+    const footer = lastAssistantMessage(page).locator('[data-slot="message-footer"]');
+    await footer.getByRole('button', { name: 'Copy' }).click();
+    await footer.getByRole('button', { name: 'Copied' }).waitFor();
+    await expect(page.evaluate(() => navigator.clipboard.readText())).resolves.toContain('You said: “hello”');
+
+    await footer.getByRole('button', { name: 'Retry' }).click();
+    await waitForReply(page);
+    // Retry replaces the last reply instead of appending a new one.
+    expect(await assistantMessages(page).count()).toBe(1);
+    await expect(lastAssistantMessage(page).innerText()).resolves.toContain('You said: “hello”');
   });
 
   it('keeps the newest streamed content in view', async () => {

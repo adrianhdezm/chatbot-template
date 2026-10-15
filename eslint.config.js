@@ -65,12 +65,14 @@ export default defineConfig([
   },
   // shadcn/ui generated components render generic wrapper elements that cannot satisfy
   // these jsx-a11y rules at the definition site (the consumer supplies the semantics).
+  // CodeBlock's <pre> is focusable on purpose so keyboard users can scroll wide code.
   {
     files: ['app/components/ui/**/*.tsx'],
     rules: {
       'jsx-a11y/label-has-associated-control': 'off',
       'jsx-a11y/click-events-have-key-events': 'off',
-      'jsx-a11y/no-noninteractive-element-interactions': 'off'
+      'jsx-a11y/no-noninteractive-element-interactions': 'off',
+      'jsx-a11y/no-noninteractive-tabindex': 'off'
     }
   },
   // Test utilities return loosely typed values that trigger no-unsafe-assignment.

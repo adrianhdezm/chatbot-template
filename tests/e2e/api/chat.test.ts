@@ -130,6 +130,22 @@ describe('POST /api/chat (UI message stream protocol)', () => {
     });
   });
 
+  it('streams reasoning and times it in the message metadata', async () => {
+    const { events } = await postChat({
+      model: MODEL,
+      messages: [userMessage('Think about it before answering')]
+    });
+    const types = events.map((event) => event.type);
+
+    expect(types).toContain('reasoning-start');
+    expect(types.filter((type) => type === 'reasoning-delta').length).toBeGreaterThan(5);
+    expect(types.indexOf('reasoning-end')).toBeLessThan(types.indexOf('text-start'));
+
+    // The server measures each reasoning block and sends it as metadata.
+    const metadata = events.find((event) => event.type === 'message-metadata');
+    expect(metadata).toMatchObject({ messageMetadata: { reasoningDurations: { 0: expect.any(Number) } } });
+  });
+
   it('forwards stream errors with a generic message', async () => {
     const { events } = await postChat({
       model: MODEL,

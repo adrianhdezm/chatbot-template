@@ -2,6 +2,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse }
 
 import { SiteHeader } from '~/components/site-header';
 import { ThemeProvider } from '~/components/theme-provider';
+import { TooltipProvider } from '~/components/ui/tooltip';
 
 import { appContext } from '~/context';
 
@@ -45,10 +46,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeProvider>
-          <div className="flex h-svh flex-col">
-            <SiteHeader />
-            {children}
-          </div>
+          <TooltipProvider>
+            <div className="flex h-svh flex-col">
+              <SiteHeader />
+              {children}
+            </div>
+          </TooltipProvider>
         </ThemeProvider>
         <ScrollRestoration />
         <Scripts />

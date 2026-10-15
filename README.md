@@ -6,11 +6,13 @@ It is a port of [shadcn-ui/chatbot-template](https://github.com/shadcn-ui/chatbo
 
 ## Features
 
-- Streaming chat with markdown rendering and shadcn/typeset
+- Streaming chat with markdown rendering, shadcn/typeset and syntax-highlighted code blocks
+- Reasoning and tool calls shown as steps in a shadcn [Trace](https://ui.shadcn.com/docs/components/base/trace), each collapsible to its details
 - Tool calling example
 - Web search via OpenAI's built-in search tool
 - Human-in-the-loop questionnaire. The model can ask clarifying questions, answered with the shadcn questionnaire component
-- **Works offline.** Without an OpenAI API key the app runs against a built-in mock model that streams scripted answers through the real AI SDK pipeline, so the whole chat protocol (streaming text, tool calls, tool results, sources, errors) can be developed and tested without spending credits.
+- Copy and Retry actions on assistant replies
+- **Works offline.** Without an OpenAI API key the app runs against a built-in mock model that streams scripted answers through the real AI SDK pipeline, so the whole chat protocol (streaming text, reasoning, tool calls, tool results, sources, errors) can be developed and tested without spending credits.
 
 ## Local development
 
@@ -24,8 +26,9 @@ That's it. With no credentials configured the model picker offers **Mock assista
 | Say…                                   | To see…                                                   |
 | -------------------------------------- | --------------------------------------------------------- |
 | "Tell me a story"                      | Rich markdown streaming (headings, table, code block)     |
-| "GitHub stats for vercel/next.js"      | A server-executed tool call and the follow-up answer      |
-| "Search the web for React Router news" | A search tool with a "Searched N websites" sources drawer |
+| "GitHub stats for vercel/next.js"      | Reasoning, then a server-executed tool call, as a Trace   |
+| "Search the web for React Router news" | A search step and a collapsible "Used N sources" list     |
+| "Think about it"                       | A timed reasoning step that collapses when it finishes    |
 | "Ask me a few clarifying questions"    | The human-in-the-loop questionnaire and the resumed reply |
 | "error"                                | How a stream error is surfaced in the UI                  |
 
@@ -79,22 +82,23 @@ Modules ending in `.server.ts` never reach the client bundle.
 
 ## Tool parts
 
-Assistant messages are a list of typed parts. [app/components/chat-message.tsx](app/components/chat-message.tsx) switches on `part.type` and delegates each one to a component in [app/components/parts/](app/components/parts):
+Assistant messages are a list of typed parts. [app/components/chat-message.tsx](app/components/chat-message.tsx) groups the parts: text renders as markdown, and each run of reasoning and tool parts between text renders as one [Trace](https://ui.shadcn.com/docs/components/base/trace). Each part is delegated to a component in [app/components/parts/](app/components/parts):
 
-| Part type          | Component                                                         | Renders                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `text`             | [text-part.tsx](app/components/parts/text-part.tsx)               | Markdown via react-markdown and shadcn/typeset.                                                                                                  |
-| `tool-github_repo` | [github-repo-part.tsx](app/components/parts/github-repo-part.tsx) | A spinner while the lookup runs, then a linked stat line (stars, forks, language).                                                               |
-| `tool-web_search`  | [web-search-part.tsx](app/components/parts/web-search-part.tsx)   | A "Searching the web…" status while the search runs, then a persistent "Searched the web" line per search.                                       |
-| `tool-ask_user`    | [ask-user-part.tsx](app/components/parts/ask-user-part.tsx)       | The answered questions inline. Pending questions render in [question-card.tsx](app/components/question-card.tsx), pinned to the scroller bottom. |
-| `source-url`       | [sources-part.tsx](app/components/parts/sources-part.tsx)         | Web search citations, deduped into a "Searched N websites" drawer once the message finishes streaming.                                           |
+| Part type          | Component                                                         | Renders                                                                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`             | [text-part.tsx](app/components/parts/text-part.tsx)               | Markdown via react-markdown and shadcn/typeset.                                                                                                                            |
+| `reasoning`        | [reasoning-part.tsx](app/components/parts/reasoning-part.tsx)     | A "Thinking" step that is open while the model reasons, then collapses to "Thought Ns". The duration is timed on the server into message metadata.                         |
+| `tool-github_repo` | [github-repo-part.tsx](app/components/parts/github-repo-part.tsx) | A running "Looking up" step, then "Looked up owner/name" with the star count, collapsible to the raw result in a code block.                                               |
+| `tool-web_search`  | [web-search-part.tsx](app/components/parts/web-search-part.tsx)   | A running "Searching the web" step, then "Searched the web for …". Failures collapse to the error text.                                                                    |
+| `tool-ask_user`    | [ask-user-part.tsx](app/components/parts/ask-user-part.tsx)       | An "Asked N questions" step, collapsible to the answers. Pending questions render in [question-card.tsx](app/components/question-card.tsx), pinned to the scroller bottom. |
+| `source-url`       | [sources-part.tsx](app/components/parts/sources-part.tsx)         | Web search citations, deduped into a collapsible "Used N sources" Trace once the message finishes streaming.                                                               |
 
 Tool parts move through states as the stream progresses — `input-streaming` → `input-available` → `output-available` (or `output-error`) — and each component switches on `part.state` to show progress, results, and failures.
 
 ### Adding your own tool
 
 1. Create `app/tools/<name>.ts` (the filename is the model-facing tool name) exporting a `tool()` with a `description`, an `inputSchema`, and an `execute` function (omit `execute` for tools the user answers in the UI, like `ask_user`), then register it in [app/tools/index.ts](app/tools/index.ts).
-2. Add a part component in [app/components/parts/](app/components/parts) and a `case "tool-<name>"` in [chat-message.tsx](app/components/chat-message.tsx).
+2. Add a part component in [app/components/parts/](app/components/parts) that renders a `TraceLine` (wrap it in `TraceCollapsible` to show details), then add the part type to `StepPart` and a `case "tool-<name>"` in [chat-message.tsx](app/components/chat-message.tsx).
 3. Optionally teach the mock model about it in [app/mock/mock-model.server.ts](app/mock/mock-model.server.ts) so it can be exercised offline.
 
 Message types are inferred from the tool definitions via `InferUITools`, so `part.input` and `part.output` are fully typed in your part component — renaming a tool field is a build error, not a silent `undefined`.
@@ -114,8 +118,8 @@ pnpm exec playwright install chromium   # once
 pnpm test:e2e
 ```
 
-- `api/chat.test.ts` checks the `/api/chat` stream against the AI SDK UI message protocol: text deltas, the two-step tool call, the client-side `ask_user` stop and resume, source citations, errors and request validation.
-- `ui/chat.test.ts` drives the page in a browser: markdown rendering, tool parts, the questionnaire round trip, the sources drawer, stop, error display and New Chat.
+- `api/chat.test.ts` checks the `/api/chat` stream against the AI SDK UI message protocol: text deltas, the two-step tool call, the client-side `ask_user` stop and resume, source citations, reasoning with its timing metadata, errors and request validation.
+- `ui/chat.test.ts` drives the page in a browser: markdown and highlighted code blocks, reasoning and tool steps in the Trace, the questionnaire round trip, the sources list, Copy and Retry, scroll following, stop, error display and New Chat.
 - `ui/theme.test.ts` covers the OS preference, the `d` hotkey, persistence and the pre-hydration theme script.
 
 Each test file is self-contained: it launches its own browser and keeps its own page actions and request helpers. The build-and-serve step is in `e2e-setup.ts`, which provides `baseUrl` to the tests (read with `inject("baseUrl")`).

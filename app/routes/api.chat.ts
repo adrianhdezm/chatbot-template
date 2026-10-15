@@ -62,10 +62,29 @@ export async function action({ request, context }: Route.ActionArgs) {
     abortSignal: request.signal
   });
 
+  // A reply after ask_user continues the last message, so count its parts.
+  const lastMessage = messages.at(-1);
+  let reasoningCount = lastMessage?.role === 'assistant' ? lastMessage.parts.filter((part) => part.type === 'reasoning').length : 0;
+  const reasoningStarts = new Map<string, { index: number; time: number }>();
+
   return createUIMessageStreamResponse({
     stream: toUIMessageStream({
       stream: result.stream,
       sendSources: true,
+      // The AI SDK does not time reasoning, so time each block here.
+      messageMetadata: ({ part }) => {
+        if (part.type === 'reasoning-start') {
+          reasoningStarts.set(part.id, { index: reasoningCount++, time: Date.now() });
+        }
+
+        const start = part.type === 'reasoning-end' ? reasoningStarts.get(part.id) : undefined;
+
+        if (!start) {
+          return undefined;
+        }
+
+        return { reasoningDurations: { [start.index]: Date.now() - start.time } };
+      },
       onError: () => 'Something went wrong. Please try again.'
     })
   });

@@ -5,9 +5,11 @@ import * as React from 'react';
 import { ChatMessage } from '~/components/chat-message';
 import { PromptForm } from '~/components/prompt-form';
 import { QuestionCard } from '~/components/question-card';
+import { StatusIcon } from '~/components/status-icon';
 import { Suggestions } from '~/components/suggestions';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '~/components/ui/empty';
+import { Message, MessageContent } from '~/components/ui/message';
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -16,6 +18,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport
 } from '~/components/ui/message-scroller';
+import { Trace, TraceIcon, TraceLine, TraceTitle } from '~/components/ui/trace';
 
 import { appContext } from '~/context';
 import { getAvailableModels } from '~/lib/models.server';
@@ -47,7 +50,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
   const [model, setModel] = React.useState(models[0]?.id ?? '');
 
-  const { messages, sendMessage, status, stop, error, addToolOutput } = useChat<ChatUIMessage>({
+  const { messages, sendMessage, regenerate, status, stop, error, addToolOutput } = useChat<ChatUIMessage>({
     // Resume the conversation automatically once the user has answered the
     // ask_user questionnaire.
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls
@@ -93,12 +96,33 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <MessageScrollerContent className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-6">
                 {messages.map((message) => (
                   <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === 'user'}>
-                    <ChatMessage message={message} isStreaming={isBusy && message.id === lastMessage?.id} />
+                    <ChatMessage
+                      message={message}
+                      isStreaming={isBusy && message.id === lastMessage?.id}
+                      onRetry={
+                        !isBusy && message.id === lastMessage?.id
+                          ? () => {
+                              void regenerate({ messageId: message.id, body: { model: resolvedModel } });
+                            }
+                          : undefined
+                      }
+                    />
                   </MessageScrollerItem>
                 ))}
                 {status === 'submitted' && (
                   <MessageScrollerItem messageId="thinking">
-                    <div className="flex shimmer items-center gap-2 px-3 text-sm text-muted-foreground">Thinking…</div>
+                    <Message>
+                      <MessageContent>
+                        <Trace>
+                          <TraceLine status="running">
+                            <TraceIcon>
+                              <StatusIcon status="running" />
+                            </TraceIcon>
+                            <TraceTitle>Thinking</TraceTitle>
+                          </TraceLine>
+                        </Trace>
+                      </MessageContent>
+                    </Message>
                   </MessageScrollerItem>
                 )}
               </MessageScrollerContent>
